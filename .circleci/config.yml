@@ -374,46 +374,46 @@ jobs:
             workflow_id: ${CIRCLE_WORKFLOW_ID:0:7} 
   
 
-smoke-test:
-    docker:
-      - image: python:3.7-alpine3.11 
-    steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: |
-            apk add curl
-            pip install awscli
-      - run:
-          name: Get backend url
-          command: |
-            export BACKEND_URL=$(curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/BACKEND_URL) 
-            echo ${BACKEND_URL}
-      - run:
-          name: Backend smoke test.
-          command: |
-            export BACKEND_URL=$(curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/BACKEND_URL)
-            echo ${BACKEND_URL}
-            curl  "http://$BACKEND_URL:3030/api/status"
-            
+  smoke-test:
+      docker:
+        - image: python:3.7-alpine3.11 
+      steps:
+        - checkout
+        - run:
+            name: Install dependencies
+            command: |
+              apk add curl
+              pip install awscli
+        - run:
+            name: Get backend url
+            command: |
+              export BACKEND_URL=$(curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/BACKEND_URL) 
+              echo ${BACKEND_URL}
+        - run:
+            name: Backend smoke test.
+            command: |
+              export BACKEND_URL=$(curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/BACKEND_URL)
+              echo ${BACKEND_URL}
+              curl  "http://$BACKEND_URL:3030/api/status"
+              
 
-      - run:
-          name: Frontend smoke test.
-          command: |
-              # test frontend reachability
-              FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/index.html"
-              if curl -s ${FRONTEND_URL} | grep -q "Welcome"
-              then
-                echo "Successful frontend Smoketest"
-                return 0
-              else
-                echo "failed frontend Smoketest"
-                return 1
-              fi
-      - destroy-environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-      - revert-migrations:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+        - run:
+            name: Frontend smoke test.
+            command: |
+                # test frontend reachability
+                FRONTEND_URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com/index.html"
+                if curl -s ${FRONTEND_URL} | grep -q "Welcome"
+                then
+                  echo "Successful frontend Smoketest"
+                  return 0
+                else
+                  echo "failed frontend Smoketest"
+                  return 1
+                fi
+        - destroy-environment:
+            workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+        - revert-migrations:
+            workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
       # Here's where you will add some code to rollback on failure  
 
 #   cloudfront-update:
