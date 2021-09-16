@@ -92,22 +92,12 @@ jobs:
 
   test-backend:
     docker:
-      - image: circleci/node:13.8.0
-    parallelism: 4
+      # Docker image here
     steps:
-      - checkout
-      - restore_cache:
-          keys: [backend-build]
-      - run:
-          name: backend tests
-          command: |
-            cd backend
-            npm i
-            npm run test 
-      - save_cache:
-          paths: [backend/node_modules]
-          key: backend-build 
-
+      # Checkout code from git
+      # Restore from cache
+      # Your job code here
+            
   scan-frontend:
     docker:
       # Docker image here
