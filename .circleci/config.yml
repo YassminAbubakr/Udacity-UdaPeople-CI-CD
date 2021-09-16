@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  slack: circleci/slack@4.3.3
 
 commands:
   destroy-environment:
@@ -86,9 +88,25 @@ jobs:
             cd frontend
             npm i
             npm run test
-      - save_cache:
-          paths: [frontend/node_modules]
-          key: frontend-build  
+
+      - slack/notify:
+          channel: '#general'
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "plain_text",
+                      "text": "*This is a text notification*",
+                      "emoji": true
+                    }
+                  ]
+                }
+              ]
+            }
+          event: fail
 
   test-backend:
     docker:
@@ -104,9 +122,24 @@ jobs:
             cd backend
             npm i
             npm run test 
-      - save_cache:
-          paths: [backend/node_modules]
-          key: backend-build 
+      - slack/notify:
+          channel: '#general'
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "plain_text",
+                      "text": "*This is a text notification*",
+                      "emoji": true
+                    }
+                  ]
+                }
+              ]
+            }
+          event: fail 
 
   scan-frontend:
       docker:
@@ -216,22 +249,42 @@ jobs:
         - destroy-environment:
             workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
-#   run-migrations:
-#     docker:
-#       # Docker image here that supports NodeJS
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Run migrations
-#           command: |
-#             # Your code here
-#             exit 1
-#       - run:
-#           name: Send migration results to memstash
-#           command: |
-#             # Your code here
-#             exit 1
-#      # Here's where you will add some code to rollback on failure      
+  run-migrations:
+      docker:
+        - image: circleci/node:13.8.0
+      steps:
+        - checkout
+        - run:
+            name: Run migrations
+            command: |
+              cd backend
+              echo ENVIROMENT=$ENVIROMENT > ".env"
+              echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
+              echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
+              echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
+              echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
+              echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
+              echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
+              echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
+              echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
+              echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+              npm install
+              # npm run build
+              npm run migrations > migrations.log
+              cat migrations.log
+        - run:
+            name: Send migration results to memstash
+            command: |
+              echo "CIRCLE_WORKFLOW_ID: ${CIRCLE_WORKFLOW_ID:0:7}"
+              grep -q "has been executed successfully\|No migrations are pending" backend/migrations.log
+              if [ $? -eq 0 ]; then
+                echo "Database migration was successful"
+                curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+              else 
+                exit 1;
+              fi
+        - revert-migrations:
+            workflow_id: ${CIRCLE_WORKFLOW_ID}    
 
 #   deploy-frontend:
 #     docker:
@@ -349,8 +402,8 @@ workflows:
               only: [main]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
       # - deploy-backend:
