@@ -77,7 +77,6 @@ jobs:
   test-frontend:
     docker:
       - image: circleci/node:13.8.0
-    parallelism: 4
     steps:
       - checkout
       - restore_cache:
@@ -111,7 +110,6 @@ jobs:
   test-backend:
     docker:
       - image: circleci/node:13.8.0
-    parallelism: 4
     steps:
       - checkout
       - restore_cache:
@@ -337,7 +335,6 @@ jobs:
             command: | 
               apk add --update tar zip gzip ansible nodejs npm curl openssh-client python3
               pip install awscli
-              
         - run:
             name: Setup environment
             no_output_timeout: 30m
@@ -354,10 +351,14 @@ jobs:
               echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
               echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
               echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
+        - restore_cache:
+            keys: ["backend-dist", "backend-build"]
         - run:
             name: Compress backend files
             command: |
-              tar -C backend -czvf artifact.tar.gz 
+              mkdir .circleci/ansible/roles/deploy/files
+              zip -r backend.zip ./backend
+              cp backend.zip .circleci/ansible/roles/deploy/files 
         - run:
             name: Deploy backend
             command: |
