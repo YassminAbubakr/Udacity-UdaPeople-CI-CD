@@ -471,7 +471,8 @@ jobs:
             echo $OldWorkflowID > OldWorkflowID.txt
             echo OldWorkflowID: "$OldWorkflowID"
             echo STACKS: "${STACKS}"
-            if [ ! -z OldWorkflowID ]
+            if [ ! -z OldWorkflowID ] 
+            then
               if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
               then
                 echo "Destroying-OldWorkFlow: ${OldWorkflowID} "
