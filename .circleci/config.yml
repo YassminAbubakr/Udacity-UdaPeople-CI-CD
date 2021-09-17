@@ -291,6 +291,8 @@ jobs:
         - image: python:3.7-alpine3.11
       steps:
         - checkout
+        - attach_workspace:
+          at: ~/
         - run:
             name: Install dependencies
             command: |
@@ -304,11 +306,16 @@ jobs:
               export API_URL=$(curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/BACKEND_URL)
               echo $API_URL
               echo "http://${API_URL}:3030" >> "frontend/.env"
+              #echo "API_URL=${API_URL}" >> "frontend/.env"
+              echo "NODE_ENV=production" >> "frontend/.env"
+              echo "ENVIRONMENT=production" >> "frontend/.env"
+              cat frontend/.env
         - run:
             name: Deploy frontend objects
             command: |
               cd frontend
               npm install
+              cat .env
               npm run build
         - run:
             name: Move files to S3 bucket
